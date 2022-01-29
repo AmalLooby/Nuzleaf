@@ -12,6 +12,11 @@ public class PlayerController : MonoBehaviour
     [SerializeField] [Range(0.0f, 0.5f)] float moveSmoothTime = 0.3f;
     [SerializeField] [Range(0.0f, 0.5f)] float mouseSmoothTime = 0.03f;
 
+    // Character Controller Slopes
+    [SerializeField] float slopeForce;
+    [SerializeField] float slopeForceRayLength;
+
+
     // Character Controller Cursor Locking
     [SerializeField] bool lockCursor = true;
 
@@ -76,7 +81,10 @@ public class PlayerController : MonoBehaviour
 
         controller.Move(velocity * Time.deltaTime);
 
-       UpdateJump();
+        if ((Input.GetAxisRaw("Horizontal") != 0 || Input.GetAxisRaw("Vertical") != 0) && OnSlope())
+            controller.Move(Vector3.down * controller.height / 2 * slopeForce * Time.deltaTime);
+
+        UpdateJump();
     }
 
     void UpdateJump()
@@ -94,7 +102,6 @@ public class PlayerController : MonoBehaviour
         controller.slopeLimit = 90.0f;
         float timeInAir = 0.0f;
 
-
         do
         {
             float jumpForce = jumpFalloff.Evaluate(timeInAir);
@@ -107,6 +114,19 @@ public class PlayerController : MonoBehaviour
         controller.slopeLimit = 45.0f;
         isJumping = false;
 
+    }
+
+    private bool OnSlope()
+    {
+        controller = GetComponent<CharacterController>();
+        if (isJumping)
+            return false;
+
+        RaycastHit hit;
+        if (Physics.Raycast(transform.position, Vector3.down, out hit, controller.height / 2 * slopeForceRayLength))
+            if (hit.normal != Vector3.up)
+                return true;
+        return false;
     }
 
     void UpdateGravity()
